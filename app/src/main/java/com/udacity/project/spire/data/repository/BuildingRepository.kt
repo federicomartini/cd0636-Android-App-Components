@@ -202,10 +202,15 @@ class DefaultBuildingRepository(
 
         return BuildingEntity(
             id = dto.id,
-            // TODO (Part of #31-32): Add remaining properties
-            // Map all properties from BuildingDto to BuildingEntity
-            // Use getOrCreateCountry() and getOrCreateCity() to get foreign key IDs
-            // Convert VisitStatus to VisitStatusEntity using .toEntity()
+            // TODO (Part of #31-32): Map from BuildingDto after TODO #27
+            name = "",
+            imageUrl = "",
+            heightMeters = 0,
+            floors = 0,
+            yearCompleted = 0,
+            architecturalStyle = "",
+            description = "",
+            cityId = 0
         )
     }
 
