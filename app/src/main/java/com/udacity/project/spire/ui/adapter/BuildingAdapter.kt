@@ -38,7 +38,12 @@ class BuildingAdapter(
      * HINT: Same implementation as BuildingPagingAdapter - inflate ItemBuildingBinding and return BuildingViewHolder
      */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BuildingViewHolder {
-        TODO("Implement onCreateViewHolder() - see BuildingPagingAdapter for reference")
+        val binding = ItemBuildingBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        return BuildingViewHolder(binding, onItemClick)
     }
 
     /**
@@ -47,7 +52,7 @@ class BuildingAdapter(
      * HINT: Call holder.bind(getItem(position)) - simpler than PagingAdapter since getItem() never returns null
      */
     override fun onBindViewHolder(holder: BuildingViewHolder, position: Int) {
-        TODO("Implement onBindViewHolder() - see TODO comment above")
+        holder.bind(getItem(position))
     }
 
     /**
@@ -61,7 +66,28 @@ class BuildingAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(building: Building) {
-            TODO("Implement bind() - same as BuildingPagingAdapter.ViewHolder.bind()")
+            binding.apply {
+                textBuildingName.text = building.name
+                textBuildingLocation.text = root.context.getString(
+                    R.string.building_location_format,
+                    building.city,
+                    building.country
+                )
+                textBuildingHeight.text = root.context.getString(
+                    R.string.building_height_format,
+                    building.heightMeters
+                )
+                textBuildingFloors.text = root.context.getString(
+                    R.string.building_floors_format,
+                    building.floors
+                )
+                imageBuilding.load(building.imageUrl) {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_launcher_foreground)
+                    error(R.drawable.ic_launcher_foreground)
+                }
+                root.setOnClickListener { onItemClick(building) }
+            }
         }
     }
 

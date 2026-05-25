@@ -1,6 +1,5 @@
 package com.udacity.project.spire.ui.adapter
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
@@ -47,7 +46,12 @@ class BuildingPagingAdapter(
      * - Return BuildingViewHolder(binding, onItemClick)
      */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BuildingViewHolder {
-        TODO("Implement onCreateViewHolder() - see TODO comment above")
+        val binding = ItemBuildingBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        return BuildingViewHolder(binding, onItemClick)
     }
 
     /**
@@ -61,7 +65,9 @@ class BuildingPagingAdapter(
      * - Call holder.bind(building) to update UI
      */
     override fun onBindViewHolder(holder: BuildingViewHolder, position: Int) {
-        TODO("Implement onBindViewHolder() - see TODO comment above")
+        getItem(position)?.let { building ->
+            holder.bind(building)
+        }
     }
 
     /**
@@ -92,7 +98,28 @@ class BuildingPagingAdapter(
          * - root is the entire item layout
          */
         fun bind(building: Building) {
-            TODO("Implement bind() - see TODO comment above")
+            binding.apply {
+                textBuildingName.text = building.name
+                textBuildingLocation.text = root.context.getString(
+                    R.string.building_location_format,
+                    building.city,
+                    building.country
+                )
+                textBuildingHeight.text = root.context.getString(
+                    R.string.building_height_format,
+                    building.heightMeters
+                )
+                textBuildingFloors.text = root.context.getString(
+                    R.string.building_floors_format,
+                    building.floors
+                )
+                imageBuilding.load(building.imageUrl) {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_launcher_foreground)
+                    error(R.drawable.ic_launcher_foreground)
+                }
+                root.setOnClickListener { onItemClick(building) }
+            }
         }
     }
 
