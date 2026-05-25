@@ -76,30 +76,58 @@ class BuildingDetailFragment : Fragment() {
     private fun displayBuildingDetails(building: Building) {
         Log.d("BuildingDetailFragment", "Displaying building details: $building")
         binding.apply {
-            // TODO #48: Bind building details, image loading and update buttons
-            // 1. Set text views: buildingName, location, height, floors, year, style, description
-            // 2. Load image with Coil: buildingImage.load(building.imageUrl)
-            // 3. Call updateButtons(building.visitStatus) to set button states
-            //updateButtons(building.visitStatus)
+            textBuildingName.text = building.name
+            textLocation.text = getString(
+                R.string.building_location_format,
+                building.city,
+                building.country
+            )
+            textDescription.text = building.description
+            textHeight.text = getString(
+                R.string.building_height_label_format,
+                building.heightMeters
+            )
+            textFloors.text = getString(
+                R.string.building_floors_label_format,
+                building.floors
+            )
+            textYear.text = getString(
+                R.string.building_year_format,
+                building.yearCompleted
+            )
+            textStyle.text = getString(
+                R.string.building_style_format,
+                building.architecturalStyle
+            )
+            imageBuilding.load(building.imageUrl) {
+                crossfade(true)
+                placeholder(R.drawable.ic_launcher_foreground)
+                error(R.drawable.ic_launcher_foreground)
+            }
+            updateButtons(building.visitStatus)
         }
     }
 
     private fun setupButtons() {
         binding.buttonBucketList.setOnClickListener {
             viewModel.building.value?.let { building ->
-                // TODO #49: Toggle between BUCKET_LIST and NOT_VISITED
-                // If currently BUCKET_LIST -> change to NOT_VISITED
-                // If currently NOT_VISITED -> change to BUCKET_LIST
-                // Call viewModel.updateVisitStatus(building.id, newStatus)
+                val newStatus = if (building.visitStatus == VisitStatus.BUCKET_LIST) {
+                    VisitStatus.NOT_VISITED
+                } else {
+                    VisitStatus.BUCKET_LIST
+                }
+                viewModel.updateVisitStatus(newStatus)
             }
         }
 
         binding.buttonVisited.setOnClickListener {
             viewModel.building.value?.let { building ->
-                // TODO #50: Toggle between VISITED and NOT_VISITED
-                // If currently VISITED -> change to NOT_VISITED
-                // If currently NOT_VISITED or BUCKET_LIST -> change to VISITED
-                // Call viewModel.updateVisitStatus(building.id, newStatus)
+                val newStatus = if (building.visitStatus == VisitStatus.VISITED) {
+                    VisitStatus.NOT_VISITED
+                } else {
+                    VisitStatus.VISITED
+                }
+                viewModel.updateVisitStatus(newStatus)
             }
         }
     }
