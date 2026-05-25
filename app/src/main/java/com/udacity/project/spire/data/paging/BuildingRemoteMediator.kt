@@ -13,6 +13,7 @@ import com.udacity.project.spire.data.local.entity.CityEntity
 import com.udacity.project.spire.data.local.entity.CountryEntity
 import com.udacity.project.spire.data.remote.api.BuildingApiService
 import com.udacity.project.spire.data.remote.dto.BuildingDto
+import com.udacity.project.spire.data.repository.BuildingRepository
 
 /**
  * RemoteMediator for Building data.
@@ -72,7 +73,58 @@ class BuildingRemoteMediator(
         loadType: LoadType,
         state: PagingState<Int, BuildingWithDetails>
     ): MediatorResult {
-        TODO("Implement RemoteMediator.load() - see TODO comment above for detailed steps")
+        return try {
+            val page = when (loadType) {
+                LoadType.REFRESH -> {
+                    val remoteKeys = getRemoteKeyClosestToCurrentPosition(state)
+                    remoteKeys?.nextKey?.minus(1) ?: initialPage
+                }
+                LoadType.PREPEND -> {
+                    return MediatorResult.Success(endOfPaginationReached = true)
+                }
+                LoadType.APPEND -> {
+                    val remoteKeys = getRemoteKeyForLastItem(state)
+                    remoteKeys?.nextKey
+                        ?: return MediatorResult.Success(endOfPaginationReached = true)
+                }
+            }
+
+            val response = apiService.getBuildingsPaginated(
+                page = page,
+                limit = state.config.pageSize.takeIf { it > 0 }
+                    ?: BuildingRepository.DEFAULT_PAGE_SIZE
+            )
+            val buildings = response.buildings
+            val pagination = response.pagination
+
+            database.withTransaction {
+                if (loadType == LoadType.REFRESH) {
+                    remoteKeysDao.clearRemoteKeys()
+                    buildingDao.clearBuildings()
+                }
+
+                val prevKey = if (page == initialPage) null else page - 1
+                val nextKey = if (pagination?.hasNext == true) page + 1 else null
+
+                val keys = buildings.map { dto ->
+                    BuildingRemoteKeys(
+                        buildingId = dto.id,
+                        prevKey = prevKey,
+                        nextKey = nextKey
+                    )
+                }
+                remoteKeysDao.insertAll(keys)
+
+                val entities = buildings.map { buildingDtoToEntity(it) }
+                buildingDao.insertBuildings(entities)
+            }
+
+            MediatorResult.Success(
+                endOfPaginationReached = buildings.isEmpty() || pagination?.hasNext != true
+            )
+        } catch (e: Exception) {
+            MediatorResult.Error(e)
+        }
     }
 
     /**
