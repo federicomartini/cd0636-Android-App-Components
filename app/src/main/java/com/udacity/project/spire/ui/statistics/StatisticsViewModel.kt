@@ -44,12 +44,9 @@ class StatisticsViewModel(
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
-    /**
-     * TODO #42a: Add init block to load statistics on creation
-     *
-     * HINT: Add init { loadStatistics() } - runs when ViewModel is created
-     */
-    // Add the init block here (see TODO #42a above)
+    init {
+        loadStatistics()
+    }
 
     /**
      * TODO #42b: Implement loadStatistics() method
@@ -69,7 +66,28 @@ class StatisticsViewModel(
      * - Fragment can call this method for retry functionality
      */
     fun loadStatistics() {
-        TODO("Implement loadStatistics() - see TODO comment above")
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                _statistics.value = repository.getStatistics()
+            } catch (e: Exception) {
+                _errorEvent.value = Event(
+                    ErrorEvent(
+                        message = e.message ?: "Failed to load statistics",
+                        throwable = e
+                    )
+                )
+                _statistics.value = BuildingStatistics(
+                    totalBuildings = 0,
+                    visitedCount = 0,
+                    bucketListCount = 0,
+                    totalMetersClimbed = 0,
+                    countriesExplored = 0
+                )
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 }
 
