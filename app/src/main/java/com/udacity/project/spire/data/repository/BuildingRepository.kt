@@ -164,12 +164,12 @@ class DefaultBuildingRepository(
      * @param countryName The name of the country
      * @return The ID of the country entity
      */
-    private suspend fun getOrCreateCountry(countryName: String): Int {
+    private suspend fun getOrCreateCountry(countryName: String, code: String): Int {
         val existingCountry = countryDao.getCountryByName(countryName)
         return if (existingCountry != null) {
             existingCountry.id
         } else {
-            val newCountry = CountryEntity(name = countryName, code = "")
+            val newCountry = CountryEntity(name = countryName, code = code)
             countryDao.insertCountry(newCountry).toInt()
         }
     }
@@ -197,20 +197,19 @@ class DefaultBuildingRepository(
      * @return The building entity ready to be inserted into the database
      */
     private suspend fun buildingDtoToEntity(dto: BuildingDto): BuildingEntity {
-        //val countryId = getOrCreateCountry(dto.country.name)
-        //val cityId = getOrCreateCity(dto.city.name, countryId)
+        val countryId = getOrCreateCountry(dto.country.name, dto.country.code)
+        val cityId = getOrCreateCity(dto.city.name, countryId)
 
         return BuildingEntity(
             id = dto.id,
-            // TODO (Part of #31-32): Map from BuildingDto after TODO #27
-            name = "",
-            imageUrl = "",
-            heightMeters = 0,
-            floors = 0,
-            yearCompleted = 0,
-            architecturalStyle = "",
-            description = "",
-            cityId = 0
+            name = dto.name,
+            imageUrl = dto.imageUrl,
+            heightMeters = dto.heightMeters,
+            floors = dto.floors,
+            yearCompleted = dto.yearCompleted,
+            architecturalStyle = dto.architecturalStyle,
+            description = dto.description,
+            cityId = cityId
         )
     }
 
