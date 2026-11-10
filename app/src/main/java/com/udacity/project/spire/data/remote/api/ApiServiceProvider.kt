@@ -18,7 +18,7 @@ object ApiServiceProvider {
     /**
      * Base URL for the API.
      */
-    private const val BASE_URL = "https://spire-3oxocbdifa-uc.a.run.app/api/"
+    private const val BASE_URL = "https://nmzmnl3hly5odkriglauqar4uy0hinjr.lambda-url.us-east-1.on.aws/api/"
 
     /**
      * HTTP logging interceptor for debugging network requests.

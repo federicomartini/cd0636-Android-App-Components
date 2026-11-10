@@ -1,11 +1,11 @@
 # A simple GET request
-GET https://spire-3oxocbdifa-uc.a.run.app
+GET https://nmzmnl3hly5odkriglauqar4uy0hinjr.lambda-url.us-east-1.on.aws
 
 ###
-GET https://spire-3oxocbdifa-uc.a.run.app/api/buildings
+GET https://nmzmnl3hly5odkriglauqar4uy0hinjr.lambda-url.us-east-1.on.aws/api/buildings
 
 ###
-GET https://spire-3oxocbdifa-uc.a.run.app/api/buildings/paginated?offset=0&limit=10
+GET https://nmzmnl3hly5odkriglauqar4uy0hinjr.lambda-url.us-east-1.on.aws/api/buildings/paginated?offset=0&limit=10
 
 ###
-GET https://spire-3oxocbdifa-uc.a.run.app/api/buildings?page=1&limit=10
+GET https://nmzmnl3hly5odkriglauqar4uy0hinjr.lambda-url.us-east-1.on.aws/api/buildings?page=1&limit=10

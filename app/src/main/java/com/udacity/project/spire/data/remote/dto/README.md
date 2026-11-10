@@ -267,7 +267,7 @@ fun BuildingDto.toDomainModel(): Building {
 
 ## API Endpoint Reference
 
-**Base URL:** `https://spire-3oxocbdifa-uc.a.run.app/api/`
+**Base URL:** `https://nmzmnl3hly5odkriglauqar4uy0hinjr.lambda-url.us-east-1.on.aws/api/`
 
 **Endpoint:** `GET /buildings`
 
@@ -277,7 +277,7 @@ fun BuildingDto.toDomainModel(): Building {
 
 **Example Request:**
 ```
-GET https://spire-3oxocbdifa-uc.a.run.app/api/buildings?page=1&limit=10
+GET https://nmzmnl3hly5odkriglauqar4uy0hinjr.lambda-url.us-east-1.on.aws/api/buildings?page=1&limit=10
 ```
 
 **Example Response:**
