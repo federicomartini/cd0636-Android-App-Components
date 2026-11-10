@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.paging.LoadState
 import com.google.android.material.snackbar.Snackbar
+import com.udacity.project.spire.R
 import com.udacity.project.spire.SpireApplication
 import com.udacity.project.spire.databinding.FragmentBuildingsBinding
 import com.udacity.project.spire.ui.adapter.BuildingLoadStateAdapter
@@ -23,6 +24,7 @@ class BuildingsFragment : Fragment() {
     private var _binding: FragmentBuildingsBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapter: BuildingPagingAdapter
+    private var lastRefreshError: Throwable? = null
 
     private val viewModel: BuildingsViewModel by viewModels {
         BuildingsViewModelFactory(
@@ -56,23 +58,44 @@ class BuildingsFragment : Fragment() {
             findNavController().navigate(action)
         }
 
-        // Connect LoadStateAdapter to show loading/error states during pagination
         binding.recyclerView.adapter = adapter.withLoadStateFooter(
             footer = BuildingLoadStateAdapter { adapter.retry() }
         )
 
-        // Show empty state when there's no data
         adapter.addLoadStateListener { loadState ->
-            val isListEmpty = loadState.refresh is LoadState.NotLoading && adapter.itemCount == 0
-            binding.emptyState.isVisible = isListEmpty
-            binding.swipeRefresh.isVisible = !isListEmpty
+            val refresh = loadState.refresh
+            val isRefreshLoading = refresh is LoadState.Loading
+            val isRefreshError = refresh is LoadState.Error
+            val isListEmpty = refresh is LoadState.NotLoading && adapter.itemCount == 0
+
+            // Initial load: center progress. Subsequent refresh: swipe indicator.
+            binding.progressBar.isVisible = isRefreshLoading && adapter.itemCount == 0
+            binding.swipeRefresh.isRefreshing = isRefreshLoading && adapter.itemCount > 0
+            binding.swipeRefresh.isVisible = !binding.progressBar.isVisible
+            binding.emptyState.isVisible = isListEmpty && !isRefreshLoading && !isRefreshError
+
+            if (refresh is LoadState.Error) {
+                val error = refresh.error
+                if (lastRefreshError != error) {
+                    lastRefreshError = error
+                    Snackbar.make(
+                        binding.root,
+                        getString(R.string.error_load_buildings),
+                        Snackbar.LENGTH_LONG
+                    ).setAction(R.string.retry) {
+                        adapter.retry()
+                    }.show()
+                }
+            } else {
+                lastRefreshError = null
+            }
         }
     }
 
     private fun setupSwipeRefresh() {
         binding.swipeRefresh.setOnRefreshListener {
+            adapter.refresh()
             viewModel.refresh()
-            binding.swipeRefresh.isRefreshing = false
         }
     }
 
@@ -91,7 +114,10 @@ class BuildingsFragment : Fragment() {
                     binding.root,
                     errorEvent.message,
                     Snackbar.LENGTH_LONG
-                ).show()
+                ).setAction(R.string.retry) {
+                    adapter.refresh()
+                    viewModel.refresh()
+                }.show()
             }
         }
     }

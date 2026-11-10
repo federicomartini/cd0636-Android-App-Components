@@ -4,9 +4,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.google.android.material.snackbar.Snackbar
+import com.udacity.project.spire.R
 import com.udacity.project.spire.SpireApplication
 import com.udacity.project.spire.databinding.FragmentStatisticsBinding
 
@@ -48,20 +50,18 @@ class StatisticsFragment : Fragment() {
             }
         }
 
-        // Observe loading state
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            // Show/hide progress indicator if available in layout
-            // For now, we'll just rely on the Snackbar for feedback
+            binding.progressBar.isVisible = isLoading
+            binding.statisticsContent.isVisible = !isLoading
         }
 
-        // Observe error events
         viewModel.errorEvent.observe(viewLifecycleOwner) { event ->
             event.getContentIfNotHandled()?.let { errorEvent ->
                 Snackbar.make(
                     binding.root,
                     errorEvent.message,
                     Snackbar.LENGTH_LONG
-                ).setAction("Retry") {
+                ).setAction(R.string.retry) {
                     viewModel.loadStatistics()
                 }.show()
             }

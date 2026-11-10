@@ -19,7 +19,9 @@ import com.udacity.project.spire.data.local.entity.CountryEntity
  * Room Database for the Spire application.
  * Manages local persistence of building, city, and country data.
  *
- * Schema version 1 — add [androidx.room.migration.Migration] when the schema changes.
+ * Schema version 1.
+ * Migration strategy: destructive migration on version upgrade (acceptable for this
+ * course project; replace with explicit [androidx.room.migration.Migration] for production).
  */
 @Database(
     entities = [
@@ -54,7 +56,10 @@ abstract class SpireDatabase : RoomDatabase() {
                     context.applicationContext,
                     SpireDatabase::class.java,
                     DATABASE_NAME
-                ).build().also { INSTANCE = it }
+                )
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }

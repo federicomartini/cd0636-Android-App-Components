@@ -64,14 +64,15 @@ class MockBuildingRepository : BuildingRepository {
         return flowOf(emptyList())
     }
 
-    override suspend fun getStatistics(): BuildingStatistics {
-        // Return empty statistics
-        return BuildingStatistics(
-            totalBuildings = 0,
-            visitedCount = 0,
-            bucketListCount = 0,
-            totalMetersClimbed = 0,
-            countriesExplored = 0
+    override suspend fun getStatistics(): Result<BuildingStatistics> {
+        return Result.success(
+            BuildingStatistics(
+                totalBuildings = 0,
+                visitedCount = 0,
+                bucketListCount = 0,
+                totalMetersClimbed = 0,
+                countriesExplored = 0
+            )
         )
     }
 }

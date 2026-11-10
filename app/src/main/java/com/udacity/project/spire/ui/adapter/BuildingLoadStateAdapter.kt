@@ -1,11 +1,13 @@
 package com.udacity.project.spire.ui.adapter
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.paging.LoadState
 import androidx.paging.LoadStateAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.udacity.project.spire.R
 import com.udacity.project.spire.databinding.ItemLoadStateBinding
 
 /**
@@ -48,19 +50,19 @@ class BuildingLoadStateAdapter(
 
         fun bind(loadState: LoadState) {
             binding.apply {
-                // Show progress bar only when loading
                 progressBar.isVisible = loadState is LoadState.Loading
-
-                // Show error message and retry button only on error
                 textError.isVisible = loadState is LoadState.Error
                 buttonRetry.isVisible = loadState is LoadState.Error
 
-                // Set error message if present
                 if (loadState is LoadState.Error) {
-                    textError.text = loadState.error.localizedMessage
-                        ?: "An error occurred while loading data"
+                    Log.e(TAG, "Paging load failed", loadState.error)
+                    textError.text = root.context.getString(R.string.error_load_buildings)
                 }
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "BuildingLoadStateAdapter"
     }
 }

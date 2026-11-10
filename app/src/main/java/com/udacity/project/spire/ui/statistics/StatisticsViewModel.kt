@@ -1,5 +1,6 @@
 package com.udacity.project.spire.ui.statistics
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -69,25 +70,34 @@ class StatisticsViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _statistics.value = repository.getStatistics()
-            } catch (e: Exception) {
-                _errorEvent.value = Event(
-                    ErrorEvent(
-                        message = e.message ?: "Failed to load statistics",
-                        throwable = e
-                    )
-                )
-                _statistics.value = BuildingStatistics(
-                    totalBuildings = 0,
-                    visitedCount = 0,
-                    bucketListCount = 0,
-                    totalMetersClimbed = 0,
-                    countriesExplored = 0
-                )
+                repository.getStatistics()
+                    .onSuccess { stats ->
+                        _statistics.value = stats
+                    }
+                    .onFailure { exception ->
+                        Log.e(TAG, "Failed to load statistics", exception)
+                        _errorEvent.value = Event(
+                            ErrorEvent(
+                                message = "Unable to load statistics. Please try again.",
+                                throwable = exception
+                            )
+                        )
+                        _statistics.value = BuildingStatistics(
+                            totalBuildings = 0,
+                            visitedCount = 0,
+                            bucketListCount = 0,
+                            totalMetersClimbed = 0,
+                            countriesExplored = 0
+                        )
+                    }
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "StatisticsViewModel"
     }
 }
 

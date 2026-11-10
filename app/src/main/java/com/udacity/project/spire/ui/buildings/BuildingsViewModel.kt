@@ -1,5 +1,6 @@
 package com.udacity.project.spire.ui.buildings
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -65,9 +66,10 @@ class BuildingsViewModel(
         viewModelScope.launch {
             repository.refreshBuildings()
                 .onFailure { exception ->
+                    Log.e("BuildingsViewModel", "Failed to refresh buildings", exception)
                     _errorEvent.value = Event(
                         ErrorEvent(
-                            message = exception.message ?: "Failed to refresh buildings",
+                            message = "Unable to refresh buildings. Please check your connection.",
                             throwable = exception
                         )
                     )

@@ -90,7 +90,9 @@ class MyVisitsFragment : Fragment() {
                     binding.root,
                     errorEvent.message,
                     Snackbar.LENGTH_LONG
-                ).show()
+                ).setAction(R.string.retry) {
+                    viewModel.retryLoad()
+                }.show()
             }
         }
     }

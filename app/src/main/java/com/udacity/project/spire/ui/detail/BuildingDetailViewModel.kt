@@ -94,7 +94,7 @@ class BuildingDetailViewModel(
     fun updateVisitStatus(status: VisitStatus) {
         if (buildingId == -1) {
             _errorEvent.value = Event(
-                ErrorEvent(message = "Invalid building ID")
+                ErrorEvent(message = "Unable to update this building. Please go back and try again.")
             )
             return
         }
@@ -110,10 +110,10 @@ class BuildingDetailViewModel(
                     _updateSuccess.value = Event(message)
                 }
                 .onFailure { exception ->
+                    Log.e("BuildingDetailViewModel", "Failed to update visit status", exception)
                     _errorEvent.value = Event(
                         ErrorEvent(
-                            message = exception.message
-                                ?: "Failed to update visit status. Please try again.",
+                            message = "Unable to update visit status. Please try again.",
                             throwable = exception
                         )
                     )

@@ -1,6 +1,5 @@
 package com.udacity.project.spire.data.repository
 
-import android.util.Log
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -9,10 +8,7 @@ import androidx.paging.map
 import com.udacity.project.spire.data.local.dao.BuildingDao
 import com.udacity.project.spire.data.local.dao.CityDao
 import com.udacity.project.spire.data.local.dao.CountryDao
-import com.udacity.project.spire.data.local.database.SpireDatabase
 import com.udacity.project.spire.data.local.entity.BuildingEntity
-import com.udacity.project.spire.data.local.entity.CityEntity
-import com.udacity.project.spire.data.local.entity.CountryEntity
 import com.udacity.project.spire.data.local.entity.toDomainModel
 import com.udacity.project.spire.data.local.entity.toEntity
 import com.udacity.project.spire.data.paging.BuildingRemoteMediator
@@ -101,9 +97,9 @@ interface BuildingRepository {
 
     /**
      * Get statistics about buildings and visits.
-     * @return BuildingStatistics with counts and totals
+     * @return Result containing BuildingStatistics or failure
      */
-    suspend fun getStatistics(): BuildingStatistics
+    suspend fun getStatistics(): Result<BuildingStatistics>
 }
 
 
@@ -114,91 +110,30 @@ interface BuildingRepository {
  * This repository is the single source of truth for building data.
  * It coordinates between local database (Room) and remote API (Retrofit).
  *
- * @param database The Room database instance
+ * @param buildingDao DAO for building queries and writes
+ * @param cityDao DAO for city get-or-insert operations
+ * @param countryDao DAO for country get-or-insert operations
  * @param apiService Remote API service
+ * @param remoteMediator Paging3 mediator (created outside; keeps DB wiring out of this constructor)
  * @param ioDispatcher Coroutine dispatcher for IO operations (default: Dispatchers.IO)
- *
- * TODO #29-37: Implement all 9 repository methods
- *
- * KEY PATTERNS TO FOLLOW:
- *
- * 1. DATABASE IS SINGLE SOURCE OF TRUTH:
- *    - UI always reads from database (via DAO queries)
- *    - API is only used to fetch new data
- *    - RemoteMediator handles synchronization
- *
- * 2. FLOW FOR REACTIVE DATA:
- *    - Use Flow for data that UI observes (getBuildings, getBuildingById, etc.)
- *    - Flow automatically emits new values when database changes
- *    - Don't manually trigger emissions - Room does it automatically
- *
- * 3. RESULT WRAPPER FOR OPERATIONS:
- *    - Use Result<T> for operations that can fail
- *    - Return Result.success(value) on success
- *    - Return Result.failure(exception) on error
- *    - Wrap API/DB calls in try-catch
- *
- * 4. COROUTINES AND DISPATCHERS:
- *    - Use withContext(ioDispatcher) for suspend functions
- *    - This moves work to background thread
- *    - Room and Retrofit already use background threads, but explicit is better
- *
- * 5. MAPPING LAYERS:
- *    - DTO (API) → Entity (Database) → Domain Model (UI)
- *    - Always map at repository boundary
- *    - Use extension functions: .toDomainModel(), .toEntity()
  */
 @OptIn(ExperimentalPagingApi::class)
 class DefaultBuildingRepository(
-    private val database: SpireDatabase,
+    private val buildingDao: BuildingDao,
+    private val cityDao: CityDao,
+    private val countryDao: CountryDao,
     private val apiService: BuildingApiService,
+    private val remoteMediator: BuildingRemoteMediator,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : BuildingRepository {
 
-    private val buildingDao = database.buildingDao()
-    private val cityDao = database.cityDao()
-    private val countryDao = database.countryDao()
-
-    /**
-     * Helper function to get or create a country entity.
-     * @param countryName The name of the country
-     * @return The ID of the country entity
-     */
-    private suspend fun getOrCreateCountry(countryName: String, code: String): Int {
-        val existingCountry = countryDao.getCountryByName(countryName)
-        return if (existingCountry != null) {
-            existingCountry.id
-        } else {
-            val newCountry = CountryEntity(name = countryName, code = code)
-            countryDao.insertCountry(newCountry).toInt()
-        }
-    }
-
-    /**
-     * Helper function to get or create a city entity.
-     * @param cityName The name of the city
-     * @param countryId The ID of the country this city belongs to
-     * @return The ID of the city entity
-     */
-    private suspend fun getOrCreateCity(cityName: String, countryId: Int): Int {
-        val existingCity = cityDao.getCityByNameAndCountry(cityName, countryId)
-        return if (existingCity != null) {
-            existingCity.id
-        } else {
-            val newCity = CityEntity(name = cityName, countryId = countryId)
-            cityDao.insertCity(newCity).toInt()
-        }
-    }
-
     /**
      * Helper function to convert BuildingDto to BuildingEntity.
-     * Creates or gets the necessary Country and City entities.
-     * @param dto The building DTO from the API
-     * @return The building entity ready to be inserted into the database
+     * Creates or gets the necessary Country and City entities via DAO get-or-insert.
      */
     private suspend fun buildingDtoToEntity(dto: BuildingDto): BuildingEntity {
-        val countryId = getOrCreateCountry(dto.country.name, dto.country.code)
-        val cityId = getOrCreateCity(dto.city.name, countryId)
+        val countryId = countryDao.getOrInsertCountry(dto.country.name, dto.country.code)
+        val cityId = cityDao.getOrInsertCity(dto.city.name, countryId)
 
         return BuildingEntity(
             id = dto.id,
@@ -237,10 +172,7 @@ class DefaultBuildingRepository(
                 enablePlaceholders = false,
                 prefetchDistance = BuildingRepository.DEFAULT_PAGE_SIZE
             ),
-            remoteMediator = BuildingRemoteMediator(
-                apiService = apiService,
-                database = database
-            ),
+            remoteMediator = remoteMediator,
             pagingSourceFactory = { buildingDao.getBuildingsPagingSource() }
         ).flow.map { pagingData ->
             pagingData.map { buildingWithDetails -> buildingWithDetails.toDomainModel() }
@@ -436,19 +368,28 @@ class DefaultBuildingRepository(
      * - Call multiple DAO methods to gather stats
      * - Used in StatisticsScreen
      */
-    override suspend fun getStatistics(): BuildingStatistics {
+    override suspend fun getStatistics(): Result<BuildingStatistics> {
         return withContext(ioDispatcher) {
-            BuildingStatistics(
-                totalBuildings = buildingDao.getBuildingCount(),
-                visitedCount = buildingDao.getCountByStatus(VisitStatus.VISITED.toEntity()),
-                bucketListCount = buildingDao.getCountByStatus(VisitStatus.BUCKET_LIST.toEntity()),
-                totalMetersClimbed = buildingDao.getTotalMetersClimbed(
-                    VisitStatus.VISITED.toEntity()
-                ) ?: 0,
-                countriesExplored = buildingDao.getVisitedCountriesCount(
-                    VisitStatus.VISITED.toEntity()
+            try {
+                val statistics = BuildingStatistics(
+                    totalBuildings = buildingDao.getBuildingCount(),
+                    visitedCount = buildingDao.getCountByStatus(
+                        VisitStatus.VISITED.toEntity()
+                    ),
+                    bucketListCount = buildingDao.getCountByStatus(
+                        VisitStatus.BUCKET_LIST.toEntity()
+                    ),
+                    totalMetersClimbed = buildingDao.getTotalMetersClimbed(
+                        VisitStatus.VISITED.toEntity()
+                    ) ?: 0,
+                    countriesExplored = buildingDao.getVisitedCountriesCount(
+                        VisitStatus.VISITED.toEntity()
+                    )
                 )
-            )
+                Result.success(statistics)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 }

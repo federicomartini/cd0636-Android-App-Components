@@ -9,8 +9,6 @@ import com.udacity.project.spire.data.local.database.SpireDatabase
 import com.udacity.project.spire.data.local.entity.BuildingEntity
 import com.udacity.project.spire.data.local.entity.BuildingRemoteKeys
 import com.udacity.project.spire.data.local.entity.BuildingWithDetails
-import com.udacity.project.spire.data.local.entity.CityEntity
-import com.udacity.project.spire.data.local.entity.CountryEntity
 import com.udacity.project.spire.data.remote.api.BuildingApiService
 import com.udacity.project.spire.data.remote.dto.BuildingDto
 import com.udacity.project.spire.data.repository.BuildingRepository
@@ -132,8 +130,8 @@ class BuildingRemoteMediator(
      * Creates or gets the necessary Country and City entities.
      */
     private suspend fun buildingDtoToEntity(dto: BuildingDto): BuildingEntity {
-        val countryId = getOrCreateCountry(dto.country.name, dto.country.code)
-        val cityId = getOrCreateCity(dto.city.name, countryId)
+        val countryId = countryDao.getOrInsertCountry(dto.country.name, dto.country.code)
+        val cityId = cityDao.getOrInsertCity(dto.city.name, countryId)
 
         return BuildingEntity(
             id = dto.id,
@@ -146,34 +144,6 @@ class BuildingRemoteMediator(
             description = dto.description,
             cityId = cityId
         )
-    }
-
-    /**
-     * Get or create a country entity.
-     * @return The ID of the country entity
-     */
-    private suspend fun getOrCreateCountry(countryName: String, code: String): Int {
-        val existingCountry = countryDao.getCountryByName(countryName)
-        return if (existingCountry != null) {
-            existingCountry.id
-        } else {
-            val newCountry = CountryEntity(name = countryName, code = code)
-            countryDao.insertCountry(newCountry).toInt()
-        }
-    }
-
-    /**
-     * Get or create a city entity.
-     * @return The ID of the city entity
-     */
-    private suspend fun getOrCreateCity(cityName: String, countryId: Int): Int {
-        val existingCity = cityDao.getCityByNameAndCountry(cityName, countryId)
-        return if (existingCity != null) {
-            existingCity.id
-        } else {
-            val newCity = CityEntity(name = cityName, countryId = countryId)
-            cityDao.insertCity(newCity).toInt()
-        }
     }
 
     /**
